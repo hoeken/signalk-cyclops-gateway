@@ -1,0 +1,19 @@
+{
+  "name": "signalk-cyclops-gateway",
+  "version": "1.0.0",
+  "description": "Pull data from a Cyclops Marine Gateway into SignalK",
+  "main": "index.js",
+  "repository": {
+  	"type": "git",
+  	"url": "git+https://github.com/hoeken/signalk-cyclops-gateway.git"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["signalk-node-server-plugin", "signalk-category-instruments", "signalk-category-hardware"],
+  "author": "Zach Hoeken",
+  "license": "ISC",
+  "dependencies": {
+  },
+  "signalk-plugin-enabled-by-default": false
+}
