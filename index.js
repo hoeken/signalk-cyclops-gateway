@@ -72,7 +72,7 @@ module.exports = function(app) {
   
   plugin.startListeningUDP = function(ip, port = 5000) {
     
-    plugin.server = dgram.createSocket('udp4');  
+    plugin.server = dgram.createSocket({ type: 'udp4', reuseAddr: true });  
 
     plugin.server.on('error', (err) => {
       console.error(`Server error:\n${err.stack}`);
