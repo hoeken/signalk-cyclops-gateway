@@ -1,6 +1,6 @@
 # signalk-cyclops-gateway
 
-SignalK server plugin to pull data from a [https://www.cyclopsmarine.com/products/gateway/](Cyclops Marine Gateway) and push it into SignalK
+SignalK server plugin to pull data from a [Cyclops Marine Gateway](https://www.cyclopsmarine.com/products/gateway/) and push it into SignalK
 
 # Configuration
 
