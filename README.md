@@ -11,7 +11,8 @@ SignalK server plugin to pull data from a [Cyclops Marine Gateway](https://www.c
   * I haven't tested if there are any performance downsides to using polling with a low interval, but its not as efficient as UDP.
   * UDP streaming will only give you access to the name and load value, but you get the data into SignalK as quickly as possible and as often as the gateway can send it.
 * If you're using UDP streaming, you need to go into your Cyclops Marine Gateway web UI and enable "UDP Broadcast" -> "NMEA0183" for *every* sensor.
-  * Set "Address" to 255.255.255.255
+  * Set "Address" to the subnet of your SignalK server eg. 192.168.1.255
   * Set "Port" to 50000 (or whatever you choose in your own config if needed)
   * Set "Talker" to AG - Autopilot - General
   * Set "Sentence" to XDR - Transducer: TempAir, C  (this sentence allows the gateway to send the name of the unit with the value)
+  * Set "Checksum" to checked/enabled
