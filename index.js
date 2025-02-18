@@ -164,7 +164,6 @@ module.exports = function(app) {
     });
 
     // Bind the server to our port and enable broadcast reception
-    console.log(`port: ${plugin.options.udp_port}`);
     plugin.server.bind(plugin.options.udp_port, () => {
       plugin.server.setBroadcast(true);
     });    
