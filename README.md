@@ -28,4 +28,4 @@ SignalK server plugin to pull data from a [Cyclops Marine Gateway](https://www.c
   * Newtons to kg: ```value / 9.80665```
   * Newtons to tonnes: ```value / 9.80665 / 1000```
   * Newtons to lbf: ```value / 4.44822```
-* Sensor metadata and configuration is stored at ```cyclops.{sensor}.*```
+* Sensor metadata and configuration is stored at ```sensors.cyclops.{sensor}.*```
