@@ -5,7 +5,6 @@ SignalK server plugin to pull data from a [Cyclops Marine Gateway](https://www.c
 # Configuration
 
 * Setup your Cyclops Marine Gateway to connect to your boat's wifi network.
-* Enter the IP address of your Cyclops Marine Gateway into the plugin configuration.
 * Setup UDP Streaming:
   * In your Cyclops Marine Gateway web UI and enable "UDP Broadcast" -> "NMEA0183" for *every* sensor.
   * Set "Address" to the subnet of your SignalK server eg. 192.168.1.255
@@ -13,6 +12,8 @@ SignalK server plugin to pull data from a [Cyclops Marine Gateway](https://www.c
   * Set "Talker" to AG - Autopilot - General
   * Set "Sentence" to XDR - Transducer: TempAir, C  (this sentence allows the gateway to send the name of the unit with the value)
   * Set "Checksum" to checked/enabled
+* Enter the IP address of your Cyclops Marine Gateway into the plugin configuration.
+* If you don't want to use UDP streaming, set the UDP port to 0 and set the polling interval as desired.
 
 ## Some Notes:
 * Polling will give you access to the low level details like id, name, station, units, rssi, time, age of data, and of course the load values, but its not a good realtime method
