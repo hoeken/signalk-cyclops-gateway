@@ -12,56 +12,50 @@ module.exports = function(app) {
     type: 'object',
     required: ['method'],
     properties: {
-      method: {
-        "type": "string",
-        "enum": ["polling", "udp"],
-        "description": "Polling = slower, more data (rssi, battery, etc).  UDP = nmea0183 streaming, no extra data, just load numbers"
-      },  
-      interval: {
-        type: 'number',
-        title: 'Polling Interval (milliseconds)',
-        default: 1000
-      },
       gateway_ip: {
         type: 'string',
         title: 'Cyclops Gateway IP Address',
         default: ''
       },
+      interval: {
+        type: 'number',
+        title: 'Polling Interval (milliseconds)',
+        default: 10000
+      },
       udp_port: {
         type: 'number',
-        title: 'Cyclops Gateway UDP Port',
+        title: 'Cyclops Gateway UDP Port (0 to disable)',
         default: 50000
       },
     }
   };
+  
+  plugin.units = [];
 
   plugin.start = function(options, restartPlugin) {
     if (typeof options.interval === 'undefined' || !options.interval)
-      options.interval = 1000;
+      options.interval = 10000;
 
     if (typeof options.gateway_ip === 'undefined') {
       app.setPluginError("No gateway IP defined.");
       return;
     }
 
-    if (typeof options.udp_port === 'undefined' || !options.udp_port)
-      options.udp_port = 50000;
-    
     plugin.options = options;
 
-    // REST polling for lots of data
-    if (options.method == 'polling') {
-      app.setPluginStatus(`Polling`);
-      const intervalId = setInterval(pollGatewayData, options.interval);
-      unsubscribes.push(() => clearInterval(intervalId));      
-    }
+    app.setPluginStatus(`Startup`);
+
+    // Initial lookup to get detailed system information
+    plugin.pollGatewayData();
+    
+    // POLLING thread
+    const intervalId = setInterval(plugin.pollGatewayData, options.interval);
+    unsubscribes.push(() => clearInterval(intervalId));      
+
     // UDP Server for fast updates
-    else if (options.method == 'udp') {
-      startListeningUDP();
+    if (options.udp_port) {
+      plugin.startListeningUDP();
       unsubscribes.push(() => plugin.stopListeningUDP());
-    }
-    else {
-      app.setPluginError(`No connection method set.`);      
     }
   };
 
@@ -132,11 +126,14 @@ module.exports = function(app) {
 
       // Remove non-alphanumeric characters (except spaces) then replace spaces with underscores.
       let cleanedTitle = fields[4].replace(/[^a-zA-Z0-9 ]/g, '').replace(/ /g, '_').toLowerCase();
+      let path = `rigging.${cleanedTitle}.tension`;
+
+      //convert to SI units
       let value = parseFloat(fields[2]);
-      let path = `sensors.cyclops.${cleanedTitle}`;
+      value = plugin.convertUnits(value, plugin.units[cleanedTitle]);
 
       //console.log(`${cleanedTitle}: ${value}`);
-      
+
       // Create a SignalK delta update message
       const delta = {
         context: "vessels.self",
@@ -151,7 +148,7 @@ module.exports = function(app) {
       
       // Post the delta update to SignalK
       delta.updates[0].values.push({
-        path: `${path}.value`,
+        path: path,
         value: value
       });
       app.handleMessage("delta", delta);
@@ -198,11 +195,21 @@ module.exports = function(app) {
           ]
         };
         
+        let metas = [];
+        
         // Loop over each sensor in the JSON array
         data.forEach(sensor => {
           // Remove non-alphanumeric characters (except spaces) then replace spaces with underscores.
           let cleanedTitle = sensor.title.replace(/[^a-zA-Z0-9 ]/g, '').replace(/ /g, '_').toLowerCase();
           let path = `sensors.cyclops.${cleanedTitle}`;
+          
+          //save our units for conversion
+          plugin.units[cleanedTitle] = sensor.units;
+          //console.log(`${cleanedTitle}: ` + plugin.units[cleanedTitle]);          
+
+          //convert it.
+          let value = parseFloat(sensor.value);
+          value = plugin.convertUnits(value, plugin.units[cleanedTitle]);
           
           delta.updates[0].values.push({
             path: `${path}.id`,
@@ -220,16 +227,6 @@ module.exports = function(app) {
           });
 
           delta.updates[0].values.push({
-            path: `${path}.units`,
-            value: sensor.units
-          });
-
-          delta.updates[0].values.push({
-            path: `${path}.value`,
-            value: parseFloat(sensor.value)
-          });
-
-          delta.updates[0].values.push({
             path: `${path}.rssi`,
             value: parseInt(sensor.rssi)
           });
@@ -243,10 +240,28 @@ module.exports = function(app) {
             path: `${path}.age`,
             value: parseFloat(sensor.age)
           });
+
+          delta.updates[0].values.push({
+            path: `rigging.${cleanedTitle}.tension`,
+            value: value,
+          });
+          
+          metas.push({
+            path: `rigging.${cleanedTitle}.tension`,
+            value: {
+              units: 'N',
+              description: 'Newtons'
+            }
+          });
         });
-        
+                  
         // Post the delta update to SignalK
         app.handleMessage("delta", delta);
+        
+        // Our meta updates
+        app.handleMessage(plugin.id, {
+          updates: [{ meta: metas }]
+        });
       })
       .catch(error => {
         // Handle any errors that occurred during the fetch or parsing
@@ -254,30 +269,17 @@ module.exports = function(app) {
       });
   };
   
-  plugin.start = function(options, restartPlugin) {
-    if (typeof options.interval === 'undefined' || !options.interval)
-      options.interval = 1000;
+  plugin.convertUnits = function (value, units) {
+    const gravitationalAcceleration = 9.80665; // m/s², average gravitational acceleration on Earth
 
-    if (typeof options.gateway_ip === 'undefined') {
-      app.setPluginError("No gateway IP defined.");
-      return;
-    }
-    
-    plugin.options = options;
-
-    // REST polling for lots of data
-    if (options.method == 'polling') {
-      const intervalId = setInterval(plugin.pollGatewayData, options.interval);
-      unsubscribes.push(() => clearInterval(intervalId));      
-    }
-    // UDP Server for fast updates
-    else if (options.method == 'udp') {
-      plugin.startListeningUDP();
-      unsubscribes.push(() => plugin.stopListeningUDP());
-    }
-    else {
-      app.setPluginError(`No connection method set.`);      
-    }
+    if (units == 'kg')
+      return value * gravitationalAcceleration;
+    else if (units == 'tonne')
+      return value * 1000 * gravitationalAcceleration;
+    else if (units == 'lbf')
+      return value * 4.44822; // 1 lbf is approximately 4.44822 newtons
+    else
+      return value;
   };
   
   // Function to calculate NMEA0183 checksum

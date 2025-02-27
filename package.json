@@ -1,6 +1,6 @@
 {
   "name": "signalk-cyclops-gateway",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Pull data from a Cyclops Marine Gateway into SignalK",
   "main": "index.js",
   "repository": {
